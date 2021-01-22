@@ -497,3 +497,12 @@ class DefaultPlayer(BasePlayer):
             await self.node._send(op='filters', guildId=self.guild_id, equalizer=payload)
 
         await self.node._dispatch_event(NodeChangedEvent(self, old_node, node))
+
+    async def set_timescale(self, speed=1.0, pitch=1.0, rate=1.0):
+        timescale = {
+                        "speed": speed,
+                        "pitch": pitch,
+                        "rate": rate
+        }
+
+        await self.node._send(op='filters', guildId=self.guild_id, timescale=timescale)
