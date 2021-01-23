@@ -149,6 +149,8 @@ class DefaultPlayer(BasePlayer):
         Whether or not to continuously to play a track.
     equalizer: :class:`list`
         The changes to audio frequencies on tracks.
+    timescale: :class:`dict`
+        The changes to audio speeds on tracks.
     queue: :class:`list`
         The order of which tracks are played.
     current: :class:``AudioTrack`
@@ -167,6 +169,11 @@ class DefaultPlayer(BasePlayer):
         self.shuffle = False
         self.repeat = False
         self.equalizer = [0.0 for x in range(15)]  # 0-14, -0.25 - 1.0
+        self.timescale = {
+                            "speed": 1.0,
+                            "pitch": 1.0,
+                            "rate": 1.0
+                         }
 
         self.queue = []
         self.current = None
@@ -428,8 +435,10 @@ class DefaultPlayer(BasePlayer):
             gain = max(min(float(gain), 1.0), -0.25)
             update_package.append({'band': band, 'gain': gain})
             self.equalizer[band] = gain
-
-        await self.node._send(op='filters', guildId=self.guild_id, equalizer=update_package)
+        if any(i != 1 for i in self.timescale.values()): # If timescale is changed
+            await self.node._send(op='filters', guildId=self.guild_id, equalizer=update_package, timescale=self.timescale)
+        else:
+            await self.node._send(op='filters', guildId=self.guild_id, equalizer=update_package)
 
     async def reset_equalizer(self):
         """ Resets equalizer to default values. """
@@ -494,15 +503,36 @@ class DefaultPlayer(BasePlayer):
 
         if any(self.equalizer):  # If any bands of the equalizer was modified
             payload = [{'band': b, 'gain': g} for b, g in enumerate(self.equalizer)]
-            await self.node._send(op='filters', guildId=self.guild_id, equalizer=payload)
+            if any(i != 1 for i in self.timescale.values()): # If timescale is changed
+                await self.node._send(op='filters', guildId=self.guild_id, equalizer=payload, timescale=self.timescale)
+            else:
+                await self.node._send(op='filters', guildId=self.guild_id, equalizer=payload)
 
         await self.node._dispatch_event(NodeChangedEvent(self, old_node, node))
 
-    async def set_timescale(self, speed=1.0, pitch=1.0, rate=1.0):
-        timescale = {
-                        "speed": speed,
-                        "pitch": pitch,
-                        "rate": rate
-        }
+    async def set_speed(self, speed):
+        self.timescale['speed'] = speed
 
-        await self.node._send(op='filters', guildId=self.guild_id, timescale=timescale)
+        if any(self.equalizer):  # If any bands of the equalizer was modified
+            payload = [{'band': b, 'gain': g} for b, g in enumerate(self.equalizer)]
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale, equalizer=payload)
+        else:
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale)
+
+    async def set_pitch(self, pitch):
+        self.timescale['pitch'] = pitch
+
+        if any(self.equalizer):  # If any bands of the equalizer was modified
+            payload = [{'band': b, 'gain': g} for b, g in enumerate(self.equalizer)]
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale, equalizer=payload)
+        else:
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale)
+
+    async def set_rate(self, rate):
+        self.timescale['rate'] = rate
+
+        if any(self.equalizer):  # If any bands of the equalizer was modified
+            payload = [{'band': b, 'gain': g} for b, g in enumerate(self.equalizer)]
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale, equalizer=payload)
+        else:
+            await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale)
