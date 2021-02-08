@@ -197,6 +197,7 @@ class DefaultPlayer(BasePlayer):
                             "pitch": 1.0,
                             "rate": 1.0
                          }
+        self.rotation = {"rotationHz": 0}
 
         self.queue = []
         self.current = None
@@ -559,3 +560,7 @@ class DefaultPlayer(BasePlayer):
             await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale, equalizer=payload)
         else:
             await self.node._send(op='filters', guildId=self.guild_id, timescale=self.timescale)
+
+    async def set_rotation(self, freq):
+        self.rotation['rotationHz'] = freq
+        await self.node._send(op='filters', guildId=self.guild_id, rotation=self.rotation)
